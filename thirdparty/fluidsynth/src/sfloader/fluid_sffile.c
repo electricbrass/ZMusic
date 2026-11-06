@@ -16,9 +16,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * License along with this library; if not, see
+ * <https://www.gnu.org/licenses/>.
  */
 
 
@@ -27,11 +26,8 @@
 #include "fluid_sys.h"
 
 #if LIBSNDFILE_SUPPORT
+#include <float.h>
 #include <sndfile.h>
-#endif
-
-#if LIBINSTPATCH_SUPPORT
-#include <libinstpatch/libinstpatch.h>
 #endif
 
 /*=================================sfload.c========================
@@ -57,6 +53,7 @@
 #define ICOP_FCC    FLUID_FOURCC('I','C','O','P')
 #define ICMT_FCC    FLUID_FOURCC('I','C','M','T')
 #define ISFT_FCC    FLUID_FOURCC('I','S','F','T') /* and yet more info ids */
+#define DMOD_FCC    FLUID_FOURCC('D','M','O','D') // Default Modulators (https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md)
 
 #define SNAM_FCC    FLUID_FOURCC('s','n','a','m')
 #define SMPL_FCC    FLUID_FOURCC('s','m','p','l') /* sample ids */
@@ -70,6 +67,8 @@
 #define IGEN_FCC    FLUID_FOURCC('i','g','e','n') /* instrument ids */
 #define SHDR_FCC    FLUID_FOURCC('s','h','d','r') /* sample info */
 #define SM24_FCC    FLUID_FOURCC('s','m','2','4')
+
+#define DLS_FCC     FLUID_FOURCC('D','L','S',' ')
 
 /* Set when the FCC code is unknown */
 #define UNKN_ID     FLUID_N_ELEMENTS(idlist)
@@ -97,6 +96,7 @@ static const uint32_t idlist[] =
     ICOP_FCC,
     ICMT_FCC,
     ISFT_FCC,
+    DMOD_FCC,
 
     SNAM_FCC,
     SMPL_FCC,
@@ -155,9 +155,11 @@ static const unsigned short invalid_preset_gen[] =
 #define READCHUNK(sf, var)                                                  \
     do                                                                      \
     {                                                                       \
-        if (sf->fcbs->fread(var, 8, sf->sffd) == FLUID_FAILED)              \
+        if (sf->fcbs->fread(&(var)->id, 4, sf->sffd) == FLUID_FAILED)       \
             return FALSE;                                                   \
-        ((SFChunk *)(var))->size = FLUID_LE32TOH(((SFChunk *)(var))->size); \
+        if (sf->fcbs->fread(&(var)->size, 4, sf->sffd) == FLUID_FAILED)     \
+            return FALSE;                                                   \
+        (var)->size = FLUID_LE32TOH((var)->size); \
     } while (0)
 
 #define READD(sf, var)                                            \
@@ -288,7 +290,7 @@ int fluid_is_soundfont(const char *filename)
             break;
         }
 
-        if(FLUID_FSEEK(fp, 4, SEEK_CUR))
+        if(fluid_file_seek(fp, 4, SEEK_CUR))
         {
             FLUID_LOG(FLUID_ERR, "fluid_is_soundfont(): cannot seek +4 bytes.");
             break;
@@ -307,19 +309,23 @@ int fluid_is_soundfont(const char *filename)
             break;  // seems to be SF2, stop here
         }
 
-#ifdef LIBINSTPATCH_SUPPORT
-        else
+#ifdef ENABLE_NATIVE_DLS
+        retcode = (fcc == DLS_FCC);
+        if(retcode)
         {
-            IpatchFileHandle *fhandle = ipatch_file_identify_open(filename, NULL);
-
-            if(fhandle != NULL)
-            {
-                retcode = (ipatch_file_identify(fhandle->file, NULL) == IPATCH_TYPE_DLS_FILE);
-                ipatch_file_close(fhandle);
-            }
+            break;  // seems to be DLS, stop here
         }
-
 #endif
+        FLUID_LOG(FLUID_ERR,
+            "fluid_is_soundfont(): expected '0x%04X' ('sfbk') "
+#ifdef ENABLE_NATIVE_DLS
+            "or '0x%04X' ('DLS ') "
+#endif
+            "chunk id but got '0x%04X'.", (unsigned int)SFBK_FCC,
+#ifdef ENABLE_NATIVE_DLS
+            (unsigned int)DLS_FCC,
+#endif
+            (unsigned int)fcc);
     }
     while(0);
 
@@ -475,6 +481,17 @@ void fluid_sffile_close(SFData *sf)
     }
 
     delete_fluid_list(sf->info);
+
+    // clean up default modulators
+    entry = sf->default_mod_list;
+
+    while (entry)
+    {
+        FLUID_FREE(fluid_list_get(entry));
+        entry = fluid_list_next(entry);
+    }
+
+    delete_fluid_list(sf->default_mod_list);
 
     entry = sf->preset;
 
@@ -638,7 +655,8 @@ static int read_listchunk(SFData *sf, SFChunk *chunk)
 
     if(chunk->id != LIST_FCC)  /* error if ! list chunk */
     {
-        FLUID_LOG(FLUID_ERR, "Invalid chunk id in level 0 parse");
+        unsigned char *p = (unsigned char *)&chunk->id;
+        FLUID_LOG(FLUID_ERR, "Invalid chunk id '0x%X 0x%X 0x%X 0x%X' (%d bytes) in level 0 parse", (int)p[0], (int)p[1], (int)p[2], (int)p[3], chunk->size);
         return FALSE;
     }
 
@@ -656,11 +674,15 @@ static int process_info(SFData *sf, int size)
         uint32_t *fcc;
     } item;
     unsigned short ver;
+    unsigned char *p;
+    sf->default_mod_list = NULL;
 
     while(size > 0)
     {
         READCHUNK(sf, &chunk);
         size -= 8;
+        // read the fourcc for debugging
+        p = (unsigned char *)&chunk.id;
 
         if(chunk.id == IFIL_FCC)
         {
@@ -719,15 +741,110 @@ static int process_info(SFData *sf, int size)
             sf->romver.minor = ver;
             FLUID_LOG(FLUID_DBG, "ROM Version: %hu.%hu", sf->version.major, sf->version.minor);
         }
+        else if (chunk.id == DMOD_FCC)
+        {
+            /* Default modulators chunk
+             * https://github.com/spessasus/soundfont-proposals/blob/main/default_modulators.md
+             */
+            SFMod *dmod;
+            unsigned int count;
+            if (chunk.size < SF_MOD_SIZE || chunk.size % SF_MOD_SIZE != 0 || size == 0)
+            {
+                FLUID_LOG(FLUID_ERR, "DMOD chunk has invalid size (%d bytes)", chunk.size);
+                return FALSE;
+            }
+
+            // read the modulators sequentially
+            count = chunk.size / SF_MOD_SIZE - 1; // minus the terminal record
+            FLUID_LOG(FLUID_DBG, "Detected the DMOD chunk with %d modulators", count);
+            for(; count > 0; count--)
+            {
+
+                if((dmod = FLUID_NEW(SFMod)) == NULL)
+                {
+                    FLUID_LOG(FLUID_ERR, "Out of memory");
+                    return FALSE;
+                }
+
+                READW(sf, dmod->src);
+                READW(sf, dmod->dest);
+                READW(sf, dmod->amount);
+                READW(sf, dmod->amtsrc);
+                READW(sf, dmod->trans);
+                sf->default_mod_list = fluid_list_prepend(sf->default_mod_list, dmod);
+            }
+
+            // terminal record
+            FSKIP(sf, SF_MOD_SIZE);
+
+        }
         else
         {
-            if(chunkid(chunk.id) != UNKN_ID)
+            int is_info_chunk_256 = 0;
+            switch (chunk.id)
             {
-                if((chunk.id != ICMT_FCC && chunk.size > 256) || (chunk.size > 65536) || (chunk.size % 2))
+                default:
+                    break;
+                case ISNG_FCC:
+                case INAM_FCC:
+                case IROM_FCC:
+                case ICRD_FCC:
+                case IENG_FCC:
+                case IPRD_FCC:
+                case ICOP_FCC:
+                case ISFT_FCC:
+                    is_info_chunk_256 = 1;
+                    break;
+            }
+
+            if (chunk.size % 2)
+            {
+                FLUID_LOG(FLUID_ERR,
+                          "INFO sub chunk %.4s has odd size of %d bytes, in violation of RIFF "
+                          "spec. Rejecting file as structurally defective.",
+                          (char *)&chunk.id,
+                          chunk.size);
+                return FALSE;
+            }
+
+            if (is_info_chunk_256 || chunk.id == ICMT_FCC)
+            {
+                if ((is_info_chunk_256 && chunk.size > 256) || (chunk.id == ICMT_FCC && chunk.size > 65536))
                 {
-                    FLUID_LOG(FLUID_ERR, "INFO sub chunk %.4s has invalid chunk size of %d bytes",
-                              (char *)&chunk.id, chunk.size);
-                    return FALSE;
+                    FLUID_LOG(FLUID_WARN,
+                              "Well known INFO sub chunk %.4s has invalid chunk size of %d bytes, "
+                              "discarding chunk.",
+                              (char *)&chunk.id,
+                              chunk.size);
+
+                    if (sf->fcbs->fseek(sf->sffd, chunk.size, SEEK_CUR) == FLUID_FAILED)
+                    {
+                        return FALSE;
+                    }
+                }
+                else
+                {
+                    /* alloc for chunk fcc and da chunk */
+                    if (!(item.fcc = FLUID_MALLOC(chunk.size + sizeof(uint32_t) + 1)))
+                    {
+                        FLUID_LOG(FLUID_PANIC, "Out of memory");
+                        return FALSE;
+                    }
+
+                    /* attach to INFO list, fluid_sffile_close will cleanup if FAIL occurs */
+                    sf->info = fluid_list_append(sf->info, item.fcc);
+
+                    /* save chunk fcc and update pointer to data value */
+                    *item.fcc++ = chunk.id;
+
+                    if (sf->fcbs->fread(item.chr, chunk.size, sf->sffd) == FLUID_FAILED)
+                    {
+                        return FALSE;
+                    }
+
+                    /* force terminate info item */
+                    item.chr[chunk.size] = '\0';
+                    FLUID_LOG(FLUID_DBG, "INFO chunk %c%c%c%c (%d bytes) -> %s", p[0], p[1], p[2], p[3], chunk.size, item.chr);
                 }
             }
             else
@@ -737,31 +854,15 @@ static int process_info(SFData *sf, int size)
                  * within the INFO-list chunk should simply be ignored.
                  * Other unknown chunks or sub-chunks are illegal and should be
                  * treated as structural errors.*/
-                unsigned char *p = (unsigned char *)&chunk.id;
-                FLUID_LOG(FLUID_WARN, "Ignoring unknown chunk ID '%c%c%c%c' in INFO chunk",
+                FLUID_LOG(FLUID_WARN, "Ignoring %s chunk ID '%c%c%c%c' in INFO chunk",
+                          (chunkid(chunk.id) == UNKN_ID) ? "unknown" : "unexpected",
                           p[0], p[1], p[2], p[3]);
+
+                if (sf->fcbs->fseek(sf->sffd, chunk.size, SEEK_CUR) == FLUID_FAILED)
+                {
+                    return FALSE;
+                }
             }
-
-            /* alloc for chunk fcc and da chunk */
-            if(!(item.fcc = FLUID_MALLOC(chunk.size + sizeof(uint32_t) + 1)))
-            {
-                FLUID_LOG(FLUID_PANIC, "Out of memory");
-                return FALSE;
-            }
-
-            /* attach to INFO list, fluid_sffile_close will cleanup if FAIL occurs */
-            sf->info = fluid_list_append(sf->info, item.fcc);
-
-            /* save chunk fcc and update pointer to data value */
-            *item.fcc++ = chunk.id;
-
-            if(sf->fcbs->fread(item.chr, chunk.size, sf->sffd) == FLUID_FAILED)
-            {
-                return FALSE;
-            }
-
-            /* force terminate info item */
-            item.chr[chunk.size] = '\0';
         }
 
         size -= chunk.size;
@@ -2338,8 +2439,6 @@ static int fluid_sffile_read_wav(SFData *sf, unsigned int start, unsigned int en
         goto error_exit_unlock;
     }
 
-    FLUID_LOG(FLUID_DBG, "ftell(): %llu, fread(): %ld bytes", sf->fcbs->ftell(sf->sffd), num_samples * sizeof(short));
-
     if(sf->fcbs->fread(loaded_data, num_samples * sizeof(short), sf->sffd) == FLUID_FAILED)
     {
         FLUID_LOG(FLUID_ERR, "Failed to read sample data");
@@ -2527,6 +2626,98 @@ static sf_count_t sfvio_tell(void *user_data)
     return data->offset;
 }
 
+/* Verify that single precision float format (roughly) matches up with IEEE754 format */
+#if    FLT_RADIX == 2 && FLT_MANT_DIG == 24              \
+    && FLT_MAX_EXP == 128 && FLT_MIN_EXP == -125         \
+    && (!defined(__FLOAT_WORD_ORDER__) || !defined(__BYTE_ORDER__) || __FLOAT_WORD_ORDER__ == __BYTE_ORDER__) \
+    /* Use the bias conversion only without reported excess precision (as present on x87). */ \
+    && (!defined(__FLT_EVAL_METHOD__) || __FLT_EVAL_METHOD__ == 0)
+#  define FLUID_SF3_HAVE_FAST_F2S16 1
+#endif
+
+#ifdef FLUID_SF3_HAVE_FAST_F2S16
+
+FLUID_STATIC_ASSERT(sizeof(float) == sizeof(uint32_t), "float must be 32-bit wide");
+
+/* SIMD-friendly conversion: NaN -> 0, clamp to [-1, 32767/32768], then
+ * round sample * 32768. The 384.0f bias assumes round-to-nearest, ties-to-even. */
+static FLUID_INLINE int16_t fluid_sf3_float_to_s16(float sample)
+{
+    uint32_t bits;
+    int32_t magnitude, limit, pcm;
+    float bias;
+
+    /* Inspect IEEE binary32 bits, not a numeric cast. Ignoring the sign lets
+     * integer NaN classification and saturation auto-vectorize; memcpy avoids
+     * strict-aliasing violations. NaNs become silence, infinities saturate. */
+    FLUID_MEMCPY(&bits, &sample, sizeof bits);
+    magnitude = (int32_t)(bits & 0x7fffffffu);
+    limit = bits >> 31 ? 0x3f800000 : 0x3f7ffe00; /* 1 or 32767/32768. */
+    magnitude = magnitude > 0x7f800000 ? 0 : magnitude; /* NaN -> 0. */
+    magnitude = magnitude > limit ? limit : magnitude;
+    bits = (bits & 0x80000000u) | (uint32_t)magnitude;
+    FLUID_MEMCPY(&sample, &bits, sizeof sample);
+
+    /* +/-384 has ULP 1/32768; matching signs preserves rounding direction. */
+    bias = copysignf(384.0f, sample);
+    sample += bias;
+    FLUID_MEMCPY(&bits, &sample, sizeof bits);
+    pcm = (int32_t)(bits & 0xffffu); /* The bias has zero low 16 bits. */
+    return (int16_t)(bits >> 31 ? -pcm : pcm);
+}
+#else
+/* Numeric fallback for excess precision (e.g. x87) or other float formats. */
+static FLUID_INLINE int16_t fluid_sf3_float_to_s16(float sample)
+{
+    if(isnan(sample))
+    {
+        return 0;
+    }
+
+    fluid_clip(sample, -1.0f, 32767.0f / 32768.0f);
+    /* Match the fast path's ties-to-even rounding in the default mode. */
+    return (int16_t)lrintf(sample * 32768.0f);
+}
+#endif
+
+/* Read normalized mono frames and saturate each sample without rescaling the
+ * entire waveform when the Vorbis decoder exceeds full scale
+ * (issues #1856, #1380, and libsndfile/libsndfile#194). */
+static int fluid_sffile_read_vorbis_samples(SNDFILE *sndfile, short *data, sf_count_t num_frames)
+{
+    float float_data[1024];
+    const sf_count_t buffer_size = FLUID_N_ELEMENTS(float_data);
+    sf_count_t frames_read = 0;
+
+    while(frames_read < num_frames)
+    {
+        sf_count_t frames = num_frames - frames_read;
+        sf_count_t i;
+        short *FLUID_RESTRICT output = data + frames_read;
+
+        if(frames > buffer_size)
+        {
+            frames = buffer_size;
+        }
+
+        if(sf_readf_float(sndfile, float_data, frames) < frames)
+        {
+            FLUID_LOG(FLUID_DBG, "Decompression failed!");
+            FLUID_LOG(FLUID_ERR, "sf_readf_float(): %s", sf_strerror(sndfile));
+            return FLUID_FAILED;
+        }
+
+        for(i = 0; i < frames; i++)
+        {
+            output[i] = fluid_sf3_float_to_s16(float_data[i]);
+        }
+
+        frames_read += frames;
+    }
+
+    return FLUID_OK;
+}
+
 /**
  * Read Ogg Vorbis compressed data from the Soundfont and decompress it, returning the number of samples
  * in the decompressed WAV. Only 16-bit mono samples are supported.
@@ -2605,7 +2796,15 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
         FLUID_LOG(FLUID_WARN, "OGG sample is not OGG compressed, this is not officially supported");
     }
 
-    wav_data = FLUID_ARRAY(short, sfinfo.frames * sfinfo.channels);
+    /* The frame count must fit the int return value and the PCM allocation. */
+    if(sfinfo.frames > INT_MAX || (uint64_t)sfinfo.frames > SIZE_MAX / sizeof(short))
+    {
+        FLUID_LOG(FLUID_ERR, "Decompressed sample exceeds the supported frame count");
+        goto error_exit;
+    }
+    /* Allocate frames PCM values. The check above jumps to error_exit when
+     * channels != 1, so frames * channels equals frames here. */
+    wav_data = FLUID_ARRAY(short, sfinfo.frames);
 
     if(!wav_data)
     {
@@ -2613,17 +2812,8 @@ static int fluid_sffile_read_vorbis(SFData *sf, unsigned int start_byte, unsigne
         goto error_exit;
     }
 
-    // Avoid clipping for loud samples, see
-    // https://github.com/FluidSynth/fluidsynth/issues/1380
-    // and
-    // https://github.com/libsndfile/libsndfile/issues/194
-    sf_command(sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
-
-    /* Automatically decompresses the Ogg Vorbis data to 16-bit PCM */
-    if(sf_readf_short(sndfile, wav_data, sfinfo.frames) < sfinfo.frames)
+    if(fluid_sffile_read_vorbis_samples(sndfile, wav_data, sfinfo.frames) == FLUID_FAILED)
     {
-        FLUID_LOG(FLUID_DBG, "Decompression failed!");
-        FLUID_LOG(FLUID_ERR, "sf_readf_short(): %s", sf_strerror(sndfile));
         goto error_exit;
     }
 

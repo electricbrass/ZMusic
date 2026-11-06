@@ -13,9 +13,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA
+ * License along with this library; if not, see
+ * <https://www.gnu.org/licenses/>.
  */
 
 #ifndef _FLUIDSYNTH_H
@@ -26,6 +25,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#cmakedefine01 BUILD_SHARED_LIBS
 
 #if (BUILD_SHARED_LIBS == 0)
     #define FLUIDSYNTH_API // building static lib? no visibility control then
@@ -90,7 +91,7 @@ extern "C" {
  *
  * - Command lines: You can send textual commands to the synthesizer.
  *
- * SoundFont(R) is a registered trademark of E-mu Systems, Inc.
+ * SoundFont(R) was a registered trademark of Creative Technology Ltd.
  */
 
 #include "fluidsynth/types.h"

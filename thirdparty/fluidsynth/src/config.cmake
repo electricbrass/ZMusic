@@ -2,279 +2,284 @@
 #define CONFIG_H
 
 /* Define to enable ALSA driver */
-/* #undef ALSA_SUPPORT */
+#cmakedefine ALSA_SUPPORT @ALSA_SUPPORT@
 
 /* Define to activate sound output to files */
-/* #undef AUFILE_SUPPORT */
+#cmakedefine AUFILE_SUPPORT @AUFILE_SUPPORT@
 
 /* whether or not we are supporting CoreAudio */
-/* #undef COREAUDIO_SUPPORT */
+#cmakedefine COREAUDIO_SUPPORT @COREAUDIO_SUPPORT@
+#cmakedefine COREAUDIO_SUPPORT_HAL @COREAUDIO_SUPPORT_HAL@
 
 /* whether or not we are supporting CoreMIDI */
-/* #undef COREMIDI_SUPPORT */
+#cmakedefine COREMIDI_SUPPORT @COREMIDI_SUPPORT@
 
 /* whether or not we are supporting DART */
-/* #undef DART_SUPPORT */
+#cmakedefine DART_SUPPORT @DART_SUPPORT@
 
 /* Define if building for Mac OS X Darwin */
-/* #undef DARWIN */
+#cmakedefine DARWIN @DARWIN@
 
 /* Define if D-Bus support is enabled */
-/* #undef DBUS_SUPPORT */
+#cmakedefine DBUS_SUPPORT  @DBUS_SUPPORT@
 
 /* Soundfont to load automatically in some use cases */
-#define DEFAULT_SOUNDFONT "C:\\ProgramData\\soundfonts\\default.sf2"
+#cmakedefine DEFAULT_SOUNDFONT "@DEFAULT_SOUNDFONT@"
 
 /* Define to enable FPE checks */
-/* #undef FPE_CHECK */
+#cmakedefine FPE_CHECK @FPE_CHECK@
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
-/* #undef HAVE_ARPA_INET_H */
+#cmakedefine HAVE_ARPA_INET_H @HAVE_ARPA_INET_H@
 
 /* Define to 1 if you have the <errno.h> header file. */
-#define HAVE_ERRNO_H 1
+#cmakedefine HAVE_ERRNO_H @HAVE_ERRNO_H@
 
 /* Define to 1 if you have the <fcntl.h> header file. */
-#define HAVE_FCNTL_H 1
+#cmakedefine HAVE_FCNTL_H @HAVE_FCNTL_H@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-/* #undef HAVE_INTTYPES_H */
+#cmakedefine HAVE_INTTYPES_H @HAVE_INTTYPES_H@
 
 /* Define to 1 if you have the <io.h> header file. */
-#ifdef _WIN32
-#define HAVE_IO_H 1
-#endif
-
-/* whether or not we are supporting lash */
-/* #undef HAVE_LASH */
+#cmakedefine HAVE_IO_H @HAVE_IO_H@
 
 /* Define if systemd support is enabled */
-/* #undef SYSTEMD_SUPPORT */
+#cmakedefine SYSTEMD_SUPPORT @SYSTEMD_SUPPORT@
 
 /* Define to 1 if you have the <limits.h> header file. */
-#define HAVE_LIMITS_H 1
+#cmakedefine HAVE_LIMITS_H @HAVE_LIMITS_H@
 
 /* Define to 1 if you have the <linux/soundcard.h> header file. */
-/* #undef HAVE_LINUX_SOUNDCARD_H */
+#cmakedefine HAVE_LINUX_SOUNDCARD_H @HAVE_LINUX_SOUNDCARD_H@
 
 /* Define to 1 if you have the <machine/soundcard.h> header file. */
-/* #undef HAVE_MACHINE_SOUNDCARD_H */
+#cmakedefine HAVE_MACHINE_SOUNDCARD_H @HAVE_MACHINE_SOUNDCARD_H@
 
 /* Define to 1 if you have the <math.h> header file. */
-#define HAVE_MATH_H 1
+#cmakedefine HAVE_MATH_H @HAVE_MATH_H@
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
-/* #undef HAVE_NETINET_IN_H */
+#cmakedefine HAVE_NETINET_IN_H @HAVE_NETINET_IN_H@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
-/* #undef HAVE_NETINET_TCP_H */
+#cmakedefine HAVE_NETINET_TCP_H @HAVE_NETINET_TCP_H@
 
 /* Define if compiling the mixer with multi-thread support */
-#define ENABLE_MIXER_THREADS 1
+#cmakedefine ENABLE_MIXER_THREADS @ENABLE_MIXER_THREADS@
 
 /* Define if compiling with openMP to enable parallel audio rendering */
-/* #undef HAVE_OPENMP */
+#cmakedefine HAVE_OPENMP @HAVE_OPENMP@
 
 /* Define to 1 if you have the <pthread.h> header file. */
-/* #undef HAVE_PTHREAD_H */
+#cmakedefine HAVE_PTHREAD_H @HAVE_PTHREAD_H@
 
 /* Define to 1 if you have the <signal.h> header file. */
-#define HAVE_SIGNAL_H 1
+#cmakedefine HAVE_SIGNAL_H @HAVE_SIGNAL_H@
 
 /* Define to 1 if you have the <stdarg.h> header file. */
-#define HAVE_STDARG_H 1
+#cmakedefine HAVE_STDARG_H @HAVE_STDARG_H@
 
 /* Define to 1 if you have the <stdint.h> header file. */
-#define HAVE_STDINT_H 1
+#cmakedefine HAVE_STDINT_H @HAVE_STDINT_H@
 
 /* Define to 1 if you have the <stdio.h> header file. */
-#define HAVE_STDIO_H 1
+#cmakedefine HAVE_STDIO_H @HAVE_STDIO_H@
 
 /* Define to 1 if you have the <stdlib.h> header file. */
-#define HAVE_STDLIB_H 1
+#cmakedefine HAVE_STDLIB_H @HAVE_STDLIB_H@
 
 /* Define to 1 if you have the <strings.h> header file. */
-/* #undef HAVE_STRINGS_H */
+#cmakedefine HAVE_STRINGS_H @HAVE_STRINGS_H@
 
 /* Define to 1 if you have the <string.h> header file. */
-#define HAVE_STRING_H 1
+#cmakedefine HAVE_STRING_H @HAVE_STRING_H@
 
 /* Define to 1 if you have the <sys/mman.h> header file. */
-/* #undef HAVE_SYS_MMAN_H */
+#cmakedefine HAVE_SYS_MMAN_H @HAVE_SYS_MMAN_H@
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
-/* #undef HAVE_SYS_SOCKET_H */
+#cmakedefine HAVE_SYS_SOCKET_H @HAVE_SYS_SOCKET_H@
 
 /* Define to 1 if you have the <sys/soundcard.h> header file. */
-/* #undef HAVE_SYS_SOUNDCARD_H */
+#cmakedefine HAVE_SYS_SOUNDCARD_H @HAVE_SYS_SOUNDCARD_H@
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#define HAVE_SYS_STAT_H 1
+#cmakedefine HAVE_SYS_STAT_H @HAVE_SYS_STAT_H@
 
 /* Define to 1 if you have the <sys/time.h> header file. */
-/* #undef HAVE_SYS_TIME_H */
+#cmakedefine HAVE_SYS_TIME_H @HAVE_SYS_TIME_H@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
+#cmakedefine HAVE_SYS_TYPES_H @HAVE_SYS_TYPES_H@
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#ifndef _WIN32
-#define HAVE_UNISTD_H 1
-#endif
+#cmakedefine HAVE_UNISTD_H @HAVE_UNISTD_H@
 
 /* Define to 1 if you have the <windows.h> header file. */
-#define HAVE_WINDOWS_H 1
+#cmakedefine HAVE_WINDOWS_H @HAVE_WINDOWS_H@
 
 /* Define to 1 if you have the <getopt.h> header file. */
-/* #undef HAVE_GETOPT_H */
+#cmakedefine HAVE_GETOPT_H @HAVE_GETOPT_H@
 
 /* Define to 1 if you have the inet_ntop() function. */
-/* #undef HAVE_INETNTOP */
+#cmakedefine HAVE_INETNTOP @HAVE_INETNTOP@
 
 /* Define to enable JACK driver */
-/* #undef JACK_SUPPORT */
+#cmakedefine JACK_SUPPORT @JACK_SUPPORT@
+
+/* Define to enable KAI driver */
+#cmakedefine KAI_SUPPORT @KAI_SUPPORT@
 
 /* Define to enable PipeWire driver */
-/* #undef PIPEWIRE_SUPPORT */
+#cmakedefine PIPEWIRE_SUPPORT @PIPEWIRE_SUPPORT@
 
 /* Include the LADSPA Fx unit */
-/* #undef LADSPA */
+#cmakedefine LADSPA @LADSPA_SUPPORT@
+
+/* Include the Signalsmith reverb engine + Limiter */
+#cmakedefine SIGNALSMITH_SUPPORT @SIGNALSMITH_SUPPORT@
 
 /* Define to enable IPV6 support */
-/* #undef IPV6_SUPPORT */
+#cmakedefine IPV6_SUPPORT @IPV6_SUPPORT@
 
 /* Define to enable network support */
-/* #undef NETWORK_SUPPORT */
+#cmakedefine NETWORK_SUPPORT @NETWORK_SUPPORT@
 
 /* Defined when fluidsynth is build in an automated environment, where no MSVC++ Runtime Debug Assertion dialogs should pop up */
-/* #undef NO_GUI */
-
-/* libinstpatch for DLS and GIG */
-/* #undef LIBINSTPATCH_SUPPORT */
+#cmakedefine NO_GUI @NO_GUI@
 
 /* libsndfile has ogg vorbis support */
-/* #undef LIBSNDFILE_HASVORBIS */
+#cmakedefine LIBSNDFILE_HASVORBIS @LIBSNDFILE_HASVORBIS@
 
 /* Define to enable libsndfile support */
-/* #undef LIBSNDFILE_SUPPORT */
+#cmakedefine LIBSNDFILE_SUPPORT @LIBSNDFILE_SUPPORT@
 
 /* Define to enable MidiShare driver */
-/* #undef MIDISHARE_SUPPORT */
+#cmakedefine MIDISHARE_SUPPORT @MIDISHARE_SUPPORT@
 
 /* Define if using the MinGW32 environment */
-/* #undef MINGW32 */
+#cmakedefine MINGW32 @MINGW32@
 
 /* Define to enable OSS driver */
-/* #undef OSS_SUPPORT */
+#cmakedefine OSS_SUPPORT @OSS_SUPPORT@
 
 /* Define to enable OPENSLES driver */
-/* #undef OPENSLES_SUPPORT */
+#cmakedefine OPENSLES_SUPPORT @OPENSLES_SUPPORT@
 
 /* Define to enable Oboe driver */
-/* #undef OBOE_SUPPORT */
+#cmakedefine OBOE_SUPPORT @OBOE_SUPPORT@
 
 /* Name of package */
-#define PACKAGE "fluidsynth"
+#cmakedefine PACKAGE "@PACKAGE@"
 
 /* Define to the address where bug reports for this package should be sent. */
-/* #undef PACKAGE_BUGREPORT */
+#cmakedefine PACKAGE_BUGREPORT @PACKAGE_BUGREPORT@
 
 /* Define to the full name of this package. */
-/* #undef PACKAGE_NAME */
+#cmakedefine PACKAGE_NAME @PACKAGE_NAME@
 
 /* Define to the full name and version of this package. */
-/* #undef PACKAGE_STRING */
+#cmakedefine PACKAGE_STRING @PACKAGE_STRING@
 
 /* Define to the one symbol short name of this package. */
-/* #undef PACKAGE_TARNAME */
+#cmakedefine PACKAGE_TARNAME @PACKAGE_TARNAME@
 
 /* Define to the version of this package. */
-/* #undef PACKAGE_VERSION */
+#cmakedefine PACKAGE_VERSION @PACKAGE_VERSION@
 
 /* Define to enable PortAudio driver */
-/* #undef PORTAUDIO_SUPPORT */
+#cmakedefine PORTAUDIO_SUPPORT @PORTAUDIO_SUPPORT@
 
 /* Define to enable PulseAudio driver */
-/* #undef PULSE_SUPPORT */
+#cmakedefine PULSE_SUPPORT @PULSE_SUPPORT@
 
 /* Define to enable DirectSound driver */
-/* #undef DSOUND_SUPPORT */
+#cmakedefine DSOUND_SUPPORT @DSOUND_SUPPORT@
 
 /* Define to enable Windows WASAPI driver */
-/* #undef WASAPI_SUPPORT */
+#cmakedefine WASAPI_SUPPORT @WASAPI_SUPPORT@
 
 /* Define to enable Windows WaveOut driver */
-/* #undef WAVEOUT_SUPPORT */
+#cmakedefine WAVEOUT_SUPPORT @WAVEOUT_SUPPORT@
 
 /* Define to enable Windows MIDI driver */
-/* #undef WINMIDI_SUPPORT */
+#cmakedefine WINMIDI_SUPPORT @WINMIDI_SUPPORT@
 
-/* Define to enable SDL2 audio driver */
-/* #undef SDL2_SUPPORT */
+/* Define to enable SDL3 audio driver */
+#cmakedefine SDL3_SUPPORT @SDL3_SUPPORT@
 
 /* Define to 1 if you have the ANSI C header files. */
-/* #undef STDC_HEADERS */
+#cmakedefine STDC_HEADERS @STDC_HEADERS@
 
 /* Soundfont to load for unit testing */
-#define TEST_SOUNDFONT "C:/Programming/Projects/fluidsynth/sf2/VintageDreamsWaves-v2.sf2"
+#cmakedefine TEST_SOUNDFONT "@TEST_SOUNDFONT@"
+
+/* DLS to load for unit testing */
+#cmakedefine TEST_DLS "@TEST_DLS@"
 
 /* Soundfont to load for UTF-8 unit testing */
-#define TEST_SOUNDFONT_UTF8_1 "C:/Programming/Projects/fluidsynth/sf2/\xE2\x96\xA0VintageDreamsWaves-v2\xE2\x96\xA0.sf2"
-#define TEST_SOUNDFONT_UTF8_2 "C:/Programming/Projects/fluidsynth/sf2/VìntàgèDrèàmsWàvès-v2.sf2"
-#define TEST_MIDI_UTF8 "C:/Programming/Projects/fluidsynth/test/èmpty.mid"
+#cmakedefine TEST_SOUNDFONT_UTF8_1 "@TEST_SOUNDFONT_UTF8_1@"
+#cmakedefine TEST_SOUNDFONT_UTF8_2 "@TEST_SOUNDFONT_UTF8_2@"
+#cmakedefine TEST_MIDI_UTF8 "@TEST_MIDI_UTF8@"
+#cmakedefine TEST_WAV_UTF8 "@TEST_WAV_UTF8@"
 
 /* SF3 Soundfont to load for unit testing */
-#define TEST_SOUNDFONT_SF3 "C:/Programming/Projects/fluidsynth/sf2/VintageDreamsWaves-v2.sf3"
+#cmakedefine TEST_SOUNDFONT_SF3 "@TEST_SOUNDFONT_SF3@"
 
 /* Define to enable SIGFPE assertions */
-/* #undef TRAP_ON_FPE */
+#cmakedefine TRAP_ON_FPE @TRAP_ON_FPE@
 
 /* Define to do all DSP in single floating point precision */
-/* #undef WITH_FLOAT */
+#cmakedefine WITH_FLOAT @WITH_FLOAT@
 
 /* Define to profile the DSP code */
-/* #undef WITH_PROFILING */
+#cmakedefine WITH_PROFILING @WITH_PROFILING@
 
 /* Define to use the readline library for line editing */
-/* #undef WITH_READLINE */
+#cmakedefine READLINE_SUPPORT @READLINE_SUPPORT@
 
-/* Define if the compiler supports VLA */ 
-/* #undef SUPPORTS_VLA */
+/* Define if the compiler supports VLA */
+#cmakedefine SUPPORTS_VLA @SUPPORTS_VLA@
 
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
-/* #undef WORDS_BIGENDIAN */
+#cmakedefine WORDS_BIGENDIAN @WORDS_BIGENDIAN@
 
 /* Define to `__inline__' or `__inline' if that's what the C compiler
    calls it, or to nothing if 'inline' is not supported under any name.  */
 #ifndef __cplusplus
-/* #undef inline */
+#cmakedefine inline @INLINE_KEYWORD@
 #endif
 
 /* Define to 1 if you have the sinf() function. */
-#define HAVE_SINF 1
+#cmakedefine HAVE_SINF @HAVE_SINF@
 
 /* Define to 1 if you have the cosf() function. */
-#define HAVE_COSF 1
+#cmakedefine HAVE_COSF @HAVE_COSF@
 
 /* Define to 1 if you have the fabsf() function. */
-#define HAVE_FABSF 1
+#cmakedefine HAVE_FABSF @HAVE_FABSF@
 
 /* Define to 1 if you have the powf() function. */
-#define HAVE_POWF 1
+#cmakedefine HAVE_POWF @HAVE_POWF@
 
 /* Define to 1 if you have the sqrtf() function. */
-#define HAVE_SQRTF 1
+#cmakedefine HAVE_SQRTF @HAVE_SQRTF@
 
 /* Define to 1 if you have the logf() function. */
-#define HAVE_LOGF 1
+#cmakedefine HAVE_LOGF @HAVE_LOGF@
 
 /* Define to 1 if you have the socklen_t type. */
-#define HAVE_SOCKLEN_T 1
+#cmakedefine HAVE_SOCKLEN_T @HAVE_SOCKLEN_T@
 
-/* Define if using glib stubs instead of real glib. */
-#ifdef _WIN32
-#define WITH_GLIB_STUBS
-#endif
+/* OS abstraction to use. */
+#define OSAL_@osal@ 1
+
+/* Define to 1 if you have C++ filesystem support */
+#cmakedefine HAVE_CXX_FILESYSTEM @HAVE_CXX_FILESYSTEM@
+
+/* Define to 1 if native DLS support is enabled */
+#cmakedefine ENABLE_NATIVE_DLS @ENABLE_NATIVE_DLS@
 
 #endif /* CONFIG_H */
