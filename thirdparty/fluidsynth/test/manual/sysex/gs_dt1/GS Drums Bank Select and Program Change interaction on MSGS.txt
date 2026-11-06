@@ -1,0 +1,43 @@
+Some additional information by RoqueDeicide, see:
+https://github.com/FluidSynth/fluidsynth/pull/1663#issuecomment-3368388253
+https://github.com/FluidSynth/fluidsynth/issues/1579
+
+
+As far as MSGS behavior is concerned, it doesn't apply any program change, as "Program Change" message triggers an update to the bank number. For instance, here is a MIDI file in pseudocode:
+
+```
+SysEx GS Reset
+Bank Select MSB 50
+SysEx GS Rhythm Part that sets channel 0 to drum mode
+Play a note 59
+SysEx GS Rhythm Part that sets channel 0 to melodic mode
+Play a note 59
+SysEx GS Rhythm Part that sets channel 0 to drum mode
+Play a note 59
+SysEx GS Rhythm Part that sets channel 0 to melodic mode
+Play a note 59
+```
+The above MIDI file, when played with MSGS, will produce: 1 crash cymbal, followed by 1 note 59 of Piano 1, followed by 1 crash cymbal again, followed by a piano note again.
+
+On MSGS, and all compliant GS and XG synths, `Bank Select` messages don't have any effect, until `Program Change` message is received. All SysEx drum mode messages are supposed to take effect immediately, by themselves and without any implied `Program Change` messages.
+
+My suggestion, is to load Standard drum kit / Piano 1 preset upon the switch of the channel to and from drum mode, with as few side effects as possible.
+
+===
+
+Here is some more detail:
+
+On MSGS, the bank number is first provided by `Bank Select` messages, it is then set in stone by `Program Change` message. The bank number will then persist through drum mode changes, but only have an effect, when the channel is in melodic mode.
+
+To illustrate this behavior, I've made a MIDI file, on MSGS it plays:
+
+ 1) Cymbal
+ 2) Piano key
+ 3) Cymbal
+ 4) Sine wave
+ 5) Cymbal
+ 6) Silence
+
+The "Sine wave" is selected, because the bank number, that was specified by the `Bank Select MSB` message, that was sent before the change to drum mode, gets committed by the `Program Change 80` message. The 6th note is silent, because `Program Change 0`, that was sent before the switch to melodic mode, commits the `Bank Select MSB 64` message, that was sent right after the sine wave was selected, causing MSGS to try to load a preset at program 0 and bank MSB 64, which doesn't exist in `gm.dls` file, and MSGS has no "Capital Tone Fallback" feature. Cymbals keep playing throughout the file, as the bank number is ignored in drum mode.
+
+[GS Drums Bank Select and Program Change interaction on MSGS.zip](https://github.com/user-attachments/files/22702799/GS.Drums.Bank.Select.and.Program.Change.interaction.on.MSGS.zip)
